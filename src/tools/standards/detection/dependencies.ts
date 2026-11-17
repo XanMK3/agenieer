@@ -58,6 +58,8 @@ export async function detectDependencies(targetRoot: string): Promise<DetectedTe
   }
 
   // Styling
+  checkDep('sass', 'css', 'styling');
+  checkDep('sass-embedded', 'css', 'styling');
   checkDep('tailwindcss', 'tailwind', 'styling');
   checkDep('styled-components', 'styled-components', 'styling');
 

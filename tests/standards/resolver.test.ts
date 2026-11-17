@@ -12,9 +12,9 @@ describe('Standards Resolver', () => {
     const resolved = resolveStandards(detected);
     const ids = resolved.map((r) => r.id);
 
-    expect(ids).toEqual(['typescript', 'react']);
-    expect(resolved[0].outputFile).toBe('docs/standards/typescript.md');
-    expect(resolved[1].outputFile).toBe('docs/standards/react.md');
+    expect(ids).toEqual(['data-safety', 'typescript', 'react']);
+    expect(resolved[1].outputFile).toBe('docs/standards/typescript.md');
+    expect(resolved[2].outputFile).toBe('docs/standards/react.md');
   });
 
   it('transitive requirement: tailwind implies css', () => {
@@ -120,7 +120,7 @@ describe('Standards Resolver', () => {
     const ids2 = resolveStandards(detected2).map((r) => r.id);
 
     expect(ids1).toEqual(ids2);
-    expect(ids1).toEqual(['typescript', 'react', 'testing', 'vitest']);
+    expect(ids1).toEqual(['data-safety', 'typescript', 'react', 'testing', 'vitest']);
   });
 
   it('populates applicable patterns and usage context for each resolved standard', () => {
@@ -131,10 +131,28 @@ describe('Standards Resolver', () => {
 
     const resolved = resolveStandards(detected);
     for (const std of resolved) {
-      expect(std.applicablePatterns.length).toBeGreaterThan(0);
+      if (std.id !== 'data-safety') expect(std.applicablePatterns.length).toBeGreaterThan(0);
       expect(std.usageContext.length).toBeGreaterThan(0);
       expect(std.outputFile.startsWith('docs/standards/')).toBe(true);
       expect(std.templateFile.endsWith('.md')).toBe(true);
     }
+  });
+});
+
+describe('Data Safety resolution', () => {
+  it.each(['javascript', 'typescript'])('%s selects Data Safety transitively with contextual scope', (id) => {
+    const resolved = resolveStandards([{ id, evidence: [], confidence: 'high' }]);
+    expect(resolved.map((standard) => standard.id)).toEqual(['data-safety', id]);
+    expect(resolved[0].applicablePatterns).toEqual([]);
+    expect(resolved[0].outputFile).toBe('docs/standards/data-safety.md');
+  });
+
+  it('deduplicates Data Safety and orders mixed languages independently of detection order', () => {
+    const detected: DetectedTechnology[] = ['typescript', 'javascript', 'typescript'].map((id) => ({
+      id, evidence: [], confidence: 'high',
+    }));
+    const resolved = resolveStandards(detected);
+    expect(resolved.map((standard) => standard.id)).toEqual(['data-safety', 'javascript', 'typescript']);
+    expect(resolveStandards([...detected].reverse())).toEqual(resolved);
   });
 });

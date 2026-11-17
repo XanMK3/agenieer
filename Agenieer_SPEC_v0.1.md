@@ -1,7 +1,7 @@
 # Agenieer — Product and Implementation Specification
 
 **Status:** Approved v0.1 product requirements; implementation details noted separately  
-**Last updated:** 2026-11-15 (non-destructive standards lifecycle revision)  
+**Last updated:** 2026-11-17 (Sass/SCSS detection and Data Safety extension)
 **Repository:** `XanMK3/agenieer` (planned)  
 **Primary language/runtime:** TypeScript / Node.js  
 **Distribution (v0.1):** Run directly from GitHub with `npx`; npm publishing is not required.
@@ -33,7 +33,7 @@ Agenieer must be **deterministic, offline-capable once installed, safe to rerun,
 6. Initial testing template set: **general testing (`testing.md`), Vitest, Playwright Test, and React Testing Library**. All four templates are part of v0.1, but only relevant ones are generated for a given repository.
 7. Detect testing infrastructure and test files using local dependency, configuration, filename/path, and (where practical) import evidence. Do **not** infer Vitest from Vite, React Testing Library from React, or Playwright Test solely from the `playwright` browser-automation package.
 8. Composition of all applicable standards, including common testing rules plus runner-/utility-specific rules where relevant. Apply language rules to test files too; test classification is not restricted to `*.test.*`.
-9. Static Markdown templates bundled with the CLI, with a registry mapping technologies to templates and dependencies.
+9. Twelve static Markdown templates (including cross-cutting Data Safety) bundled with the CLI, with a registry mapping technologies to templates and dependencies.
 10. Generation of `docs/standards/*.md`, `docs/standards/testing/*.md`, and `docs/standards/README.md` in the target repository, as applicable.
 11. Creation or safe modification of root `AGENTS.md`, with a **small, stack-independent managed instruction** telling agents to read `docs/standards/README.md` and then only the applicable standards (including when editing tests). **Never concatenate standards content into `AGENTS.md`.**
 12. **Selective standards routing (STD-ROUTING-001):** generate a lightweight `docs/standards/README.md` index with applicable file patterns and technology/usage contexts. The index must link to individual standards instead of embedding their bodies, and its links must resolve to existing files. Multiple standards can apply to the same task.
@@ -137,6 +137,7 @@ agenieer/
 │               └── agents.ts         # Fixed, minimal AGENTS.md managed reference
 ├── templates/
 │   └── standards/
+│       ├── data-safety.md
 │       ├── javascript.md
 │       ├── typescript.md
 │       ├── react.md
@@ -230,9 +231,9 @@ Detection is deterministic and **dependency-first**. A recognized dependency, a 
 | JavaScript | `.js` / `.jsx` source files; JS-based project without TS use |
 | TypeScript | `typescript` dependency, `tsconfig*.json`, `.ts` / `.tsx` source files |
 | React | `react` / `react-dom` dependencies, relevant React framework/config evidence, JSX/TSX use in context |
-| CSS | CSS source files, frontend styling setup, or use of supported CSS-based styling technologies |
+| CSS | `sass` / `sass-embedded` dependencies; `*.css`, `*.scss`, `*.sass` source files; or supported CSS-based styling technologies |
 | Tailwind CSS | `tailwindcss` dependency; Tailwind integration packages, config files, or relevant CSS usage (including modern CSS-first setups) |
-| CSS Modules | `*.module.css` files (and optionally related module-style extensions later) |
+| CSS Modules | `*.module.css`, `*.module.scss`, and `*.module.sass` files |
 | styled-components | `styled-components` dependency and/or imports in source files |
 | Generic testing | Supported test files/dirs or detectable testing dependencies/configuration, including unsupported runners |
 | Vitest | `vitest` dependency, Vitest configuration/setup, or Vitest imports; a Vite dependency **alone is insufficient** |
@@ -240,6 +241,10 @@ Detection is deterministic and **dependency-first**. A recognized dependency, a 
 | React Testing Library | `@testing-library/react` dependency or imports; React alone is insufficient |
 
 ### Resolution policies
+
+- Sass/SCSS reuses foundational `css.md`; no separate Sass technology ID or template exists. Either recognized Sass dependency is sufficient without source corroboration. Preserve source-scan exclusions and bounded content scanning.
+- JavaScript and TypeScript require `data-safety.md` through the existing transitive resolver. Deduplicate it in mixed projects and include it in deterministic registry ordering; do not add a Data Safety detector.
+- `requires` controls which files are generated; applicability metadata controls when agents read them. Data Safety has contextual applicability for external or untrusted data, import/export or transformation, persistence and generated datasets, and large inputs, downloads, uploads, or streams. Do not require it for unrelated JS/TS tasks.
 
 - Select **TypeScript** conventions when TS is actually used; select **JavaScript** conventions for JS-based projects. In genuinely mixed JS/TS codebases, both may apply. Avoid selecting JavaScript merely because ordinary JS tooling/config files exist alongside a TS application.
 - Select React standards in addition to the relevant language standard; `.tsx` code generally needs **TypeScript + React** conventions.
@@ -273,8 +278,9 @@ Templates are prescriptive about **safe, broadly applicable practices**, not und
 
 ```ts
 const templates = {
-  javascript: { file: 'javascript.md', requires: [] },
-  typescript: { file: 'typescript.md', requires: [] },
+  'data-safety': { file: 'data-safety.md', requires: [] },
+  javascript: { file: 'javascript.md', requires: ['data-safety'] },
+  typescript: { file: 'typescript.md', requires: ['data-safety'] },
   react: { file: 'react.md', requires: [] },
   css: { file: 'css.md', requires: [] },
   tailwind: { file: 'tailwind.md', requires: ['css'] },
@@ -299,6 +305,7 @@ For a React + TypeScript + Tailwind + CSS Modules repository that also uses Vite
 └── docs/
     └── standards/
         ├── README.md
+        ├── data-safety.md
         ├── typescript.md
         ├── react.md
         ├── css.md
@@ -312,6 +319,9 @@ For a React + TypeScript + Tailwind + CSS Modules repository that also uses Vite
 ```
 
 ### Standards documents
+
+- The 12 templates include Data Safety, covering external-data shape and meaning, absent/falsy/sentinel semantics, runtime validation, partial-failure preservation, output validation, atomic replacement where supported, and limits enforced during actual input consumption. Keep this cross-cutting guidance centralized; language templates retain language-specific rules.
+- React guidance covers HTML content models, explicit underlying controls in reusable APIs, valid interactive nesting, and compatible keyboard behavior. CSS guidance keeps component internals within their owner and uses explicit variants, documented hooks, or custom properties; necessary cross-component overrides are scoped and documented. Shared testing guidance covers relevant malformed/falsy inputs, partial completion/recovery, resource boundaries, and effects on existing data without requiring every category in every test.
 
 - Each detected supported technology gets one standalone, human-readable Markdown file. Testing consists of a shared `testing.md` plus only the relevant testing-technology files.
 - Templates emphasize actionable conventions, examples, clear ownership boundaries, and verification guidance.
@@ -327,7 +337,7 @@ For a React + TypeScript + Tailwind + CSS Modules repository that also uses Vite
 
 - Link **only to active, selected standards that are present or guaranteed by successful planned creation**; validate every generated relative link. Preserve unrelated manually written README content. Remove obsolete technologies from Agenieer-managed routing after a successful recognized-stack detection, **without deleting their files**. If detection yields no supported technologies, retain previously managed routing instead of clearing it.
 - For every linked standard, state **when to read it** using grounded file patterns and/or technology/usage context; allow several standards to apply to one file or task. Do not publish raw template content here.
-- Routing examples: `*.ts`/`*.tsx` → TypeScript; React components/hooks → React; CSS files or CSS-related styling work → CSS; Tailwind utility usage → Tailwind; `.module.css` → CSS Modules; identified tests → general testing; Vitest / Playwright Test / React Testing Library → their respective suite or usage evidence.
+- Routing examples: `*.ts`/`*.tsx` → TypeScript; React components/hooks → React; CSS files or CSS-related styling work → CSS; Tailwind utility usage → Tailwind; `.module.css` / `.module.scss` / `.module.sass` → CSS Modules; identified tests → general testing; Vitest / Playwright Test / React Testing Library → their respective suite or usage evidence.
 - Do **not** treat file suffixes as definitive for semantic use: not every `.tsx` is React, not every `.spec.ts` is Playwright, and a repository-level dependency does not prove every test uses that framework. When a rule cannot be reliably scoped, instruct the agent to inspect imports/configuration or the relevant feature area before loading a framework-specific document.
 - Describe composition, e.g. `Button.test.tsx` using Vitest + React Testing Library may require TypeScript + React + Testing + Vitest + React Testing Library. Do not automatically read Playwright or other unrelated standards.
 - Include a short conflict rule: project-specific documented decisions supersede generic preferences, but correctness/security/accessibility requirements are not silently overridden.
@@ -491,8 +501,8 @@ npm exec --yes --package=github:XanMK3/agenieer -- agenieer standards init
 
 ### Core acceptance scenarios
 
-1. **JS-only repository:** generates `javascript.md` (plus `css.md` if frontend styling is present), a valid index, and an `AGENTS.md` reference.
-2. **React + TypeScript repository:** generates `typescript.md`, `react.md`, and applicable CSS standards; does not add irrelevant JavaScript rules solely due to tool config files.
+1. **JS-only repository:** generates `data-safety.md` and `javascript.md` (plus `css.md` if frontend styling is present), a valid index, and an `AGENTS.md` reference.
+2. **React + TypeScript repository:** generates `data-safety.md`, `typescript.md`, `react.md`, and applicable CSS standards; does not add irrelevant JavaScript rules solely due to tool config files.
 3. **Mixed styling repository:** React + TS + Tailwind + CSS Modules + styled-components yields all corresponding styling documents **plus** shared CSS standards.
 4. **Playwright-only tests:** Vite + Playwright Test generates `testing.md` and `testing/playwright.md`, but **not** Vitest or React Testing Library merely because Vite/React is present.
 5. **Vitest + React Testing Library:** React + TS + Vitest + React Testing Library generates `testing.md`, `testing/vitest.md`, and `testing/react-testing-library.md`, alongside language/framework standards.
@@ -508,7 +518,7 @@ npm exec --yes --package=github:XanMK3/agenieer -- agenieer standards init
 15. **Detect command:** emits grounded technology findings; never writes.
 16. **Error paths:** malformed/unreadable project config, unsafe symlinks, permission errors, unsupported project layouts, and malformed managed markers fail safely or degrade conservatively without unsafe writes.
 17. **GitHub execution:** a clean machine/fixture with Node/npm/Git can run the public-repo command without publishing to npm, and packaged templates load correctly.
-18. **Small AGENTS.md invariant:** a repo with three standards and a repo with eleven standards receive the same managed AGENTS.md section; it contains only the fixed router, never individual standard bodies.
+18. **Small AGENTS.md invariant:** a repo with three standards and a repo with twelve standards receive the same managed AGENTS.md section; it contains only the fixed router, never individual standard bodies.
 19. **Selective README routing:** managed index links point only to active standards available after allowed writes; each link carries a meaningful file-pattern or usage scope, and no full template body is copied into the index.
 20. **Stack changes:** adding Tailwind or a testing framework updates the index and adds its standalone document without changing the fixed AGENTS.md managed block.
 21. **Multi-standard applicability:** routing explains how TypeScript + React + Tailwind or TypeScript + Testing + Vitest + React Testing Library combine for an appropriate file/task, without loading unrelated Playwright guidance.
@@ -548,7 +558,7 @@ npm exec --yes --package=github:XanMK3/agenieer -- agenieer standards init
 
 ### Already approved — not open product questions
 
-The eight product decisions recorded in §14 remain settled, **except Decision 4 was explicitly revised on 2026-11-15**: adaptive initialization, dependency-first detection, managed documentation sections, non-destructive standards preservation with routing-only deactivation, eleven research-backed templates, patterns plus contextual routing, partial completion with defined exit codes, and preflight/atomic per-file writes.
+The eight product decisions recorded in §14 remain settled, **except Decision 4 was explicitly revised on 2026-11-15**: adaptive initialization, dependency-first detection, managed documentation sections, non-destructive standards preservation with routing-only deactivation, twelve approved templates, patterns plus contextual routing, partial completion with defined exit codes, and preflight/atomic per-file writes.
 
 ### Implementation details requiring engineering design (not new product approvals)
 
@@ -557,7 +567,7 @@ The eight product decisions recorded in §14 remain settled, **except Decision 4
 - Exact supported Node.js and dependency versions, build/bundle configuration, distribution of Markdown assets, and CI matrix.
 - Platform-specific mechanics for safe temporary file replacement and the handling of unsupported atomic-rename cases.
 
-The eleven research-backed templates are **approved as the v0.1 baseline**; factual mistakes or framework-version incompatibilities may be corrected during implementation and tests without reopening their selection.
+The twelve approved templates are **approved as the v0.1 baseline**; factual mistakes or framework-version incompatibilities may be corrected during implementation and tests without reopening their selection.
 
 ---
 
@@ -582,7 +592,7 @@ The eleven research-backed templates are **approved as the v0.1 baseline**; fact
 
 ## 14. Resolve decision record — all eight approved (2026-11-15)
 
-These decisions superseded earlier proposals, including `--yes` and non-interactive-by-default empty-directory initialization. **Decision 4 was subsequently revised on 2026-11-15**: obsolete standards are now preserved, with routing-only deactivation. The revised decision below is authoritative.
+These decisions superseded earlier proposals, including `--yes` and non-interactive-by-default empty-directory initialization. **Decision 4 was subsequently revised on 2026-11-15**: obsolete standards are now preserved, with routing-only deactivation. The revised decision below is authoritative. Decision 5 was extended on 2026-11-17 with Data Safety and the template refinements described above.
 
 | # | Topic | Approved decision | Accepted trade-off / caveat |
 | --- | --- | --- | --- |
@@ -590,7 +600,7 @@ These decisions superseded earlier proposals, including `--yes` and non-interact
 | 2 | Detection confidence | Dependency-first; any strong recognized dependency/config/source signal is sufficient; expose evidence via `standards detect`. | Unused dependencies can produce redundant standards. |
 | 3 | Existing documentation | Preserve content; append/update only well-formed Agenieer-managed sections in `AGENTS.md` and the standards index; preserve existing selected standard bodies. | Overlapping instructions are not automatically reconciled. |
 | 4 | Technology removal (revised) | **Never delete or overwrite standalone standards.** On successful recognized-stack detection, remove obsolete references only from the Agenieer-managed README routing; restore routing when a technology returns. | Inactive files accumulate but preserve all customizations. Empty detection retains existing managed routes. No `.agenieer.json` or Git-provenance tracking. |
-| 5 | Template content | Adopt all eleven concise, researched language, styling, framework and testing templates as the v0.1 baseline. | Some rules may be refined after hands-on tests. |
+| 5 | Template content | Adopt all twelve concise cross-cutting, language, styling, framework and testing templates as the v0.1 baseline. | Some rules may be refined after hands-on tests. |
 | 6 | Routing precision | Use file patterns **and** contextual technology/usage rules; compose multiple relevant documents; no per-file routing map. | Agents must interpret some contextual guidance. |
 | 7 | CLI error handling | Apply independent safe changes despite conflicts; report created/updated/skipped/conflicted outputs and routing changes; return `0` success, `1` operational failure, `2` unresolved conflicts. | Some runs may finish partially and require a rerun or manual fix. |
 | 8 | Write atomicity | Full preflight, atomic writes/managed-section patches where supported, create missing standards before references, stop on unexpected operational failure, support safe reruns. | No repository-wide transaction/rollback guarantee; standalone standards are never replaced or deleted. |

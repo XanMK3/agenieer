@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import { renderAgentsSection, AGENTS_START_MARKER, AGENTS_END_MARKER } from '@/tools/standards/generation/agents.js';
@@ -37,6 +38,7 @@ describe('Generation: AGENTS.md (Invariants #18 & #24)', () => {
     expect(output).not.toContain('react');
     expect(output).not.toContain('vitest');
     expect(output).not.toContain('tailwind');
+    expect(output).not.toContain('data-safety');
   });
 });
 
@@ -53,6 +55,15 @@ describe('Generation: docs/standards/README.md', () => {
     expect(output).toContain(README_END_MARKER);
     expect(output).toContain('[TypeScript](typescript.md)');
     expect(output).toContain('[React](react.md)');
+    expect(output).toContain('[Data Safety](data-safety.md)');
+    for (const context of ['External or untrusted data', 'data import/export or transformation', 'persistence and generated datasets', 'large inputs, downloads, uploads, or streams', 'Read only when the task involves these contexts']) {
+      expect(output).toContain(context);
+    }
+    expect(output.split('## Applicable File Patterns')[1].split('## Composition Examples')[0]).not.toContain('data-safety');
+    const dataTemplate = await fs.readFile(path.join(TEMPLATES_ROOT, 'data-safety.md'), 'utf8');
+    for (const line of dataTemplate.split('\n').filter((line) => line.startsWith('- '))) {
+      expect(output).not.toContain(line);
+    }
     expect(output).toContain('## Active Standards');
     expect(output).toContain('## Applicable File Patterns');
     expect(output).toContain('## Conflict Resolution');
@@ -139,9 +150,9 @@ describe('Generation: Managed Marker Parsing & Handling', () => {
   });
 
   it('extracts active IDs from README managed section', () => {
-    const text = `${README_START_MARKER}\n| [TypeScript](typescript.md) | TS files |\n| [Vitest](testing/vitest.md) | Tests |\n${README_END_MARKER}`;
+    const text = `${README_START_MARKER}\n| [Data Safety](data-safety.md) | External data |\n| [TypeScript](typescript.md) | TS files |\n| [Vitest](testing/vitest.md) | Tests |\n${README_END_MARKER}`;
     const ids = extractActiveIds(text);
-    expect(ids).toEqual(new Set(['typescript', 'vitest']));
+    expect(ids).toEqual(new Set(['data-safety', 'typescript', 'vitest']));
   });
 });
 
@@ -210,47 +221,50 @@ describe('Generation: Change Plan & Routing Lifecycle', () => {
   });
 
   it('produces skip action on idempotent rerun', async () => {
-    const tmpDir = path.resolve(__dirname, '../_tmp_plan_idempotent');
-    await fs.mkdir(path.join(tmpDir, 'docs/standards'), { recursive: true });
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agenieer-idempotent-'));
+    try {
 
-    const standards = resolveStandards([
-      { id: 'typescript', evidence: [], confidence: 'high' },
-    ]);
+      const standards = resolveStandards([
+        { id: 'typescript', evidence: [], confidence: 'high' },
+      ]);
 
-    // First plan
-    const plan1 = await buildChangePlan({
-      targetRoot: tmpDir,
-      templateRoot: TEMPLATES_ROOT,
-      standards,
-      detected: [{ id: 'typescript', evidence: [], confidence: 'high' }],
-      hasRecognizedStack: true,
-    });
+      // First plan
+      const plan1 = await buildChangePlan({
+        targetRoot: tmpDir,
+        templateRoot: TEMPLATES_ROOT,
+        standards,
+        detected: [{ id: 'typescript', evidence: [], confidence: 'high' }],
+        hasRecognizedStack: true,
+      });
 
-    // Write all planned changes
-    for (const change of plan1.changes) {
-      if (change.content) {
-        await fs.mkdir(path.dirname(path.join(tmpDir, change.path)), { recursive: true });
-        await fs.writeFile(path.join(tmpDir, change.path), change.content);
+      // Write all planned changes
+      for (const change of plan1.changes) {
+        if (change.content) {
+          await fs.mkdir(path.dirname(path.join(tmpDir, change.path)), { recursive: true });
+          await fs.writeFile(path.join(tmpDir, change.path), change.content);
+        }
       }
+
+      // Second plan on identical state
+      const plan2 = await buildChangePlan({
+        targetRoot: tmpDir,
+        templateRoot: TEMPLATES_ROOT,
+        standards,
+        detected: [{ id: 'typescript', evidence: [], confidence: 'high' }],
+        hasRecognizedStack: true,
+      });
+
+      // Both README and AGENTS should be 'skip'
+      const readmeChange = plan2.changes.find((c) => c.path === 'docs/standards/README.md');
+      const agentsChange = plan2.changes.find((c) => c.path === 'AGENTS.md');
+      const tsChange = plan2.changes.find((c) => c.path === 'docs/standards/typescript.md');
+
+      expect(readmeChange?.action).toBe('skip');
+      expect(agentsChange?.action).toBe('skip');
+      expect(tsChange?.action).toBe('skip');
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
     }
-
-    // Second plan on identical state
-    const plan2 = await buildChangePlan({
-      targetRoot: tmpDir,
-      templateRoot: TEMPLATES_ROOT,
-      standards,
-      detected: [{ id: 'typescript', evidence: [], confidence: 'high' }],
-      hasRecognizedStack: true,
-    });
-
-    // Both README and AGENTS should be 'skip'
-    const readmeChange = plan2.changes.find((c) => c.path === 'docs/standards/README.md');
-    const agentsChange = plan2.changes.find((c) => c.path === 'AGENTS.md');
-    const tsChange = plan2.changes.find((c) => c.path === 'docs/standards/typescript.md');
-
-    expect(readmeChange?.action).toBe('skip');
-    expect(agentsChange?.action).toBe('skip');
-    expect(tsChange?.action).toBe('skip');
   });
 
   it('flags conflict when managed markers are malformed', async () => {

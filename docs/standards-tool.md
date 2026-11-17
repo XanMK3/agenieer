@@ -13,9 +13,9 @@ Detection is deterministic, offline, and dependency-first. A recognized dependen
 | **JavaScript** | `.js` / `.jsx` / `.mjs` application files | Ignored in TypeScript projects if only config/tooling files (e.g. `vite.config.js`) exist |
 | **TypeScript** | `typescript` dependency, `tsconfig*.json`, `*.ts` / `*.tsx` | Applied to both app and test files |
 | **React** | `react` / `react-dom` in `package.json`, `*.tsx` / `*.jsx`, Babel presets | Does not imply TypeScript or RTL |
-| **CSS** | `*.css` files, or use of any CSS-derived styling tool | Automatically included for all frontend styling setups |
+| **CSS** | `sass` / `sass-embedded` dependencies; `*.css`, `*.scss`, `*.sass` files; or supported CSS-derived styling tools | Sass/SCSS reuses `css.md`; no separate Sass technology or template |
 | **Tailwind CSS** | `tailwindcss` dependency, `tailwind.config.*`, `@tailwind` directive | Complements `css.md` |
-| **CSS Modules** | `*.module.css` source files | Complements `css.md` |
+| **CSS Modules** | `*.module.css`, `*.module.scss`, `*.module.sass` source files | Complements `css.md` |
 | **styled-components**| `styled-components` dependency, source imports | Complements `css.md` |
 | **Testing (Shared)**| Any recognized test file, test directory, or runner | Base rules for all test suites |
 | **Vitest** | `vitest` dependency, `vitest.config.*`, source imports | **Not** inferred solely from Vite |
@@ -27,10 +27,11 @@ Detection is deterministic, offline, and dependency-first. A recognized dependen
 
 ## 2. Template Registry & Transitive Dependencies
 
-Templates are bundled statically with the CLI:
+All 12 templates are bundled statically with the CLI:
 
 ```text
 templates/standards/
+├── data-safety.md
 ├── javascript.md
 ├── typescript.md
 ├── react.md
@@ -46,6 +47,8 @@ templates/standards/
 ```
 
 ### Transitive Requirements
+- `javascript` -> requires `data-safety`
+- `typescript` -> requires `data-safety`
 - `tailwind` -> requires `css`
 - `css-modules` -> requires `css`
 - `styled-components` -> requires `css`
@@ -54,6 +57,8 @@ templates/standards/
 - `react-testing-library` -> requires `testing`
 
 ---
+
+`requires` controls generated files, with transitive dependencies deduplicated in deterministic order. Applicability metadata controls when agents read them. Data Safety has contextual routing only: external or untrusted data; import/export or transformation; persistence and generated datasets; large inputs, downloads, uploads, or streams. Unrelated JS/TS tasks do not require it. It has no technology detector.
 
 ## 3. Managed Section Format
 

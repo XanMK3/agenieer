@@ -111,6 +111,7 @@ export function renderReadmeSection(standards: ResolvedStandard[], unsupportedRu
 
 function idToTitle(id: string): string {
   const titles: Record<string, string> = {
+    'data-safety': 'Data Safety',
     javascript: 'JavaScript',
     typescript: 'TypeScript',
     react: 'React',

@@ -6,4 +6,5 @@
 - Keep render pure. Don't mutate props/state or create component definitions inside another component's render.
 - Use stable keys for changing lists; change a component's `key` intentionally when its local state should reset.
 - Prefer semantic controls, accessible names, and keyboard-operable behavior over click handlers on generic elements.
+- Respect HTML content models and interactive nesting constraints. Make underlying interactive elements explicit in reusable component APIs; avoid nested controls and conflicting keyboard interactions.
 - Add `memo`, `useMemo`, and `useCallback` for a measured bottleneck or a specific identity contract—not automatically everywhere.
