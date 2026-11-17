@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import path from 'node:path';
+import os from 'node:os';
+import { resolveStandards } from '@/tools/standards/resolver.js';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import { detectTechnologies } from '@/tools/standards/detection/index.js';
@@ -124,5 +126,58 @@ describe('Technology Detection', () => {
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('Sass and SCSS detection', () => {
+  let targetRoot: string;
+
+  beforeEach(async () => {
+    targetRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agenieer-sass-'));
+  });
+
+  afterEach(async () => {
+    await fs.rm(targetRoot, { recursive: true, force: true });
+  });
+
+  it.each(['sass', 'sass-embedded'])('%s dependency alone selects CSS with evidence', async (dependency) => {
+    await fs.writeFile(path.join(targetRoot, 'package.json'), JSON.stringify({ dependencies: { [dependency]: '1.0.0' } }));
+    const detected = await detectTechnologies(targetRoot);
+    expect(detected).toEqual([expect.objectContaining({
+      id: 'css', confidence: 'high',
+      evidence: [expect.stringContaining(`"${dependency}"`)],
+    })]);
+    expect(resolveStandards(detected).map((standard) => standard.id)).toEqual(['css']);
+  });
+
+  it.each(['css', 'scss', 'sass', 'module.css', 'module.scss', 'module.sass'])('%s source selects foundational styling standards', async (extension) => {
+    await fs.writeFile(path.join(targetRoot, `style.${extension}`), '');
+    const resolved = resolveStandards(await detectTechnologies(targetRoot));
+    expect(resolved.map((standard) => standard.id)).toEqual(extension.startsWith('module.') ? ['css', 'css-modules'] : ['css']);
+    if (extension.startsWith('module.')) {
+      expect(resolved[1].applicablePatterns).toContain(`**/*.${extension}`);
+    }
+  });
+
+  it('deduplicates mixed dependency and styling evidence', async () => {
+    await fs.writeFile(path.join(targetRoot, 'package.json'), JSON.stringify({ devDependencies: { sass: '1', 'sass-embedded': '1' } }));
+    for (const extension of ['css', 'scss', 'sass', 'module.css', 'module.scss', 'module.sass']) {
+      await fs.writeFile(path.join(targetRoot, `style.${extension}`), '');
+    }
+    const detected = await detectTechnologies(targetRoot);
+    expect(detected.filter((technology) => technology.id === 'css')).toHaveLength(1);
+    expect(detected.find((technology) => technology.id === 'css')?.evidence).toEqual(expect.arrayContaining([
+      expect.stringContaining('"sass"'), expect.stringContaining('"sass-embedded"'), expect.stringContaining('6 files'),
+    ]));
+    expect(resolveStandards(detected).map((standard) => standard.id)).toEqual(['css', 'css-modules']);
+  });
+
+  it.each(['node_modules', '.git', 'dist', 'coverage', 'docs/standards', 'templates', 'fixtures', '__fixtures__', '__mocks__'])('excludes Sass sources under %s', async (directory) => {
+    const excluded = path.join(targetRoot, directory);
+    await fs.mkdir(excluded, { recursive: true });
+    for (const extension of ['scss', 'sass', 'module.scss', 'module.sass']) {
+      await fs.writeFile(path.join(excluded, `style.${extension}`), '@tailwind utilities;');
+    }
+    expect(await detectTechnologies(targetRoot)).toEqual([]);
   });
 });

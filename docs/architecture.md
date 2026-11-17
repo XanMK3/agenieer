@@ -79,7 +79,7 @@ Target Repository
 ## 3. Key Invariants
 
 ### Invariant 1: Small Fixed AGENTS.md Router
-`src/tools/standards/generation/agents.ts` renders a minimal, stack-independent instruction block. It accepts zero parameters and never imports or interpolates template bodies. Whether a repository uses 3 standards or 11, the managed section in `AGENTS.md` is byte-for-byte identical.
+`src/tools/standards/generation/agents.ts` renders a minimal, stack-independent instruction block. It accepts zero parameters and never imports or interpolates template bodies. Whether a repository uses 3 standards or 12, the managed section in `AGENTS.md` is byte-for-byte identical.
 
 ### Invariant 2: Non-Destructive Standards Lifecycle
 Agenieer never deletes or overwrites existing standalone standards files. When a technology is removed from a project, its reference is removed from the managed section in `docs/standards/README.md` only; its file remains intact on disk. If the technology is re-added later, the existing file is reused and its route restored.

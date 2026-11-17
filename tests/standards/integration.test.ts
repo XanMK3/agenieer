@@ -183,6 +183,31 @@ describe('Integration Scenarios (Acceptance Tests from Spec §10)', () => {
     expect(after).toBe(customContent);
   });
 
+  it('preserves customized Data Safety and surrounding README content on reinitialization', async () => {
+    const targetRoot = path.join(WORK_DIR, 'custom-data-safety');
+    await copyDir(path.join(FIXTURES_DIR, 'javascript'), targetRoot);
+    expect(await runInit({ targetRoot, dryRun: false, nonInteractive: true })).toBe(0);
+    const standardPath = path.join(targetRoot, 'docs/standards/data-safety.md');
+    expect(await fileExists(standardPath)).toBe(true);
+    const customContent = '# Data Safety\nTeam-specific data contract.\n';
+    await fs.writeFile(standardPath, customContent);
+    const readmePath = path.join(targetRoot, 'docs/standards/README.md');
+    const readme = await fs.readFile(readmePath, 'utf8');
+    const decoratedReadme = `Team introduction\n${readme}\nTeam footer\n`;
+    await fs.writeFile(readmePath, decoratedReadme);
+    const agentsPath = path.join(targetRoot, 'AGENTS.md');
+    const agents = await fs.readFile(agentsPath, 'utf8');
+
+    for (const dryRun of [true, false, false]) {
+      expect(await runInit({ targetRoot, dryRun, nonInteractive: true })).toBe(0);
+      expect(await fs.readFile(standardPath, 'utf8')).toBe(customContent);
+      expect(await fs.readFile(readmePath, 'utf8')).toBe(decoratedReadme);
+      expect(await fs.readFile(agentsPath, 'utf8')).toBe(agents);
+    }
+    expect(readme).toContain('[Data Safety](data-safety.md)');
+    expect(agents).not.toContain('data-safety');
+  });
+
   it('Scenario 12: Repeated init is idempotent (no duplicate markers or changed content)', async () => {
     const targetRoot = path.join(WORK_DIR, 'idempotent');
     await copyDir(path.join(FIXTURES_DIR, 'react-typescript'), targetRoot);
@@ -252,7 +277,7 @@ describe('Integration Scenarios (Acceptance Tests from Spec §10)', () => {
     expect(await fileExists(path.join(targetRoot, 'AGENTS.md'))).toBe(false);
   });
 
-  it('Scenario 18: AGENTS.md managed block is identical for 3 standards and 11 standards', async () => {
+  it('Scenario 18: AGENTS.md managed block is identical for different sets of standards', async () => {
     const targetRoot1 = path.join(WORK_DIR, 'repo-few');
     await copyDir(path.join(FIXTURES_DIR, 'javascript'), targetRoot1);
     await runInit({ targetRoot: targetRoot1, dryRun: false, nonInteractive: true });

@@ -57,11 +57,18 @@ Initializes standards in the repository.
 
 ## Supported Technologies (v0.1)
 
+The CLI bundles **12 standards templates**, selected according to detected technologies and their dependencies.
+
+- **Cross-cutting:** Data Safety (`data-safety.md`), included by JavaScript and TypeScript
 - **Languages:** JavaScript, TypeScript
 - **Frameworks:** React
 - **Styling:** CSS, Tailwind CSS, CSS Modules, styled-components
 - **Testing:** General testing (`testing.md`), Vitest, Playwright Test, React Testing Library
 - **Unsupported runners:** Detects Jest and Cypress to provide generic testing guidance (`testing.md`) with explicit unsupported notices in the routing index.
+
+Sass/SCSS uses the foundational `css.md`: either a `sass` or `sass-embedded` dependency alone, or `.css`, `.scss`, or `.sass` source files, selects CSS. CSS Modules detects `.module.css`, `.module.scss`, and `.module.sass` and includes CSS. No separate Sass template is needed.
+
+JavaScript and TypeScript both require Data Safety; mixed projects generate it only once. Dependencies control which files are generated, while the routing index controls when to read them. Read Data Safety for external or untrusted data, import/export or transformation, persistence and generated datasets, and large inputs, downloads, uploads, or streams—not for unrelated JS/TS work.
 
 ## Generated Structure
 
@@ -71,6 +78,7 @@ Initializes standards in the repository.
 └── docs/
     └── standards/
         ├── README.md
+        ├── data-safety.md
         ├── typescript.md
         ├── react.md
         ├── css.md

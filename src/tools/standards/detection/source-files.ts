@@ -83,7 +83,7 @@ export async function detectSourceFiles(targetRoot: string): Promise<SourceScanR
   const appJsFiles = jsFiles.filter((f) => !isToolingOrConfigFile(f));
 
   // CSS Modules
-  const cssModuleFiles = await listFiles(targetRoot, '**/*.module.css', {
+  const cssModuleFiles = await listFiles(targetRoot, ['**/*.module.css', '**/*.module.scss', '**/*.module.sass'], {
     ignore: COMMON_IGNORE,
   });
   if (cssModuleFiles.length > 0) {
@@ -96,8 +96,8 @@ export async function detectSourceFiles(targetRoot: string): Promise<SourceScanR
     });
   }
 
-  // All CSS files
-  const allCssFiles = await listFiles(targetRoot, '**/*.css', {
+  // CSS, SCSS, and Sass files
+  const allCssFiles = await listFiles(targetRoot, ['**/*.css', '**/*.scss', '**/*.sass'], {
     ignore: COMMON_IGNORE,
   });
   if (allCssFiles.length > 0) {

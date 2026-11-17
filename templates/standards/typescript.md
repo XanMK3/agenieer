@@ -1,6 +1,6 @@
 # TypeScript
 
-- Use `unknown` at untrusted boundaries; narrow or validate values before use. A type assertion does not perform runtime validation.
+- Use `unknown` rather than `any` at untrusted boundaries; narrow with type guards before accessing members.
 - Model mutually exclusive states with discriminated unions, not objects with many optional fields; use exhaustive checks when a new variant must be handled.
 - Prefer inferred types for local expressions and explicit types at public boundaries when they clarify the contract.
 - Use `satisfies` to check config/lookup objects without discarding useful literal inference; avoid `as` casts that merely silence errors.

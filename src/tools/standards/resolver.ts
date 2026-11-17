@@ -1,8 +1,9 @@
 import { DetectedTechnology } from './types.js';
 
 const TEMPLATE_REGISTRY = {
-  javascript: { file: 'javascript.md', requires: [] as string[] },
-  typescript: { file: 'typescript.md', requires: [] as string[] },
+  'data-safety': { file: 'data-safety.md', requires: [] as string[] },
+  javascript: { file: 'javascript.md', requires: ['data-safety'] },
+  typescript: { file: 'typescript.md', requires: ['data-safety'] },
   react: { file: 'react.md', requires: [] as string[] },
   css: { file: 'css.md', requires: [] as string[] },
   tailwind: { file: 'tailwind.md', requires: ['css'] },
@@ -26,6 +27,10 @@ export interface ResolvedStandard {
 
 /** Mapping from technology id to file patterns and usage context */
 const APPLICABILITY: Record<string, { patterns: string[]; context: string }> = {
+  'data-safety': {
+    patterns: [],
+    context: 'External or untrusted data; data import/export or transformation; persistence and generated datasets; large inputs, downloads, uploads, or streams. Read only when the task involves these contexts.',
+  },
   javascript: {
     patterns: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],
     context: 'JavaScript source files and application code',
@@ -47,7 +52,7 @@ const APPLICABILITY: Record<string, { patterns: string[]; context: string }> = {
     context: 'Tailwind CSS utility usage in source files and stylesheets',
   },
   'css-modules': {
-    patterns: ['**/*.module.css', '**/*.module.scss'],
+    patterns: ['**/*.module.css', '**/*.module.scss', '**/*.module.sass'],
     context: 'CSS Module files and components that import them',
   },
   'styled-components': {
@@ -140,6 +145,7 @@ export function resolveStandards(detected: DetectedTechnology[]): ResolvedStanda
 
   // Build ordered output: use a deterministic stable order matching the registry
   const registryOrder: TemplateId[] = [
+    'data-safety',
     'javascript',
     'typescript',
     'react',
