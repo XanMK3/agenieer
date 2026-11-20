@@ -79,7 +79,7 @@ Target Repository
 ## 3. Key Invariants
 
 ### Invariant 1: Small Fixed AGENTS.md Router
-`src/tools/standards/generation/agents.ts` renders a minimal, stack-independent instruction block. It accepts zero parameters and never imports or interpolates template bodies. Whether a repository uses 3 standards or 12, the managed section in `AGENTS.md` is byte-for-byte identical.
+`src/tools/standards/generation/agents.ts` renders a minimal, stack-independent instruction block. It accepts zero parameters and never imports or interpolates template bodies. Whether a repository uses 3 standards or 14, the managed section in `AGENTS.md` is byte-for-byte identical.
 
 ### Invariant 2: Non-Destructive Standards Lifecycle
 Agenieer never deletes or overwrites existing standalone standards files. When a technology is removed from a project, its reference is removed from the managed section in `docs/standards/README.md` only; its file remains intact on disk. If the technology is re-added later, the existing file is reused and its route restored.
@@ -89,3 +89,13 @@ Agenieer never deletes or overwrites existing standalone standards files. When a
 - `generation/standards.ts`: writes standalone templates to disk.
 - `generation/readme.ts`: renders the applicability routing index from metadata only.
 - `generation/agents.ts`: renders the fixed entrypoint instruction.
+
+## 4. HTML/Vue and React Target Extension
+
+`detection/frameworks.ts` gathers HTML, Vue, JSX runtime, and React platform evidence from local manifests, source imports, and static configuration. `inspection.ts` supplies shared exclusions, bounded enumeration, and bounded reads; `vue-sfc.ts` inspects top-level SFC blocks without a compiler or general HTML parser. No target code runs.
+
+`DetectedTechnology` retains the `react` identifier and adds optional structured `platformEvidence` (web/native evidence arrays) and `reactTarget`. The detector merges evidence before classifying web + native as mixed, one platform as that platform, and neither as unknown. Nested package manifests and source imports can establish distinct application targets. Existing non-framework dependency/testing detection remains in its original scanners.
+
+The resolver expands Vue → HTML and conditionally expands React → HTML for web/mixed targets. Missing target context is unknown. Its set-based expansion deduplicates HTML alongside existing CSS, testing, and Data Safety dependencies; explicit HTML evidence remains independent. Guided React selection supplies the same target field.
+
+Routing remains metadata-driven and task-sensitive. Shared extensions are candidate patterns, not framework ownership. The generated index explains markup versus script/style applicability and native-style components with web output. The root router and standalone-file preservation policies are unchanged. Detection never scans generated standards to sustain obsolete routes.

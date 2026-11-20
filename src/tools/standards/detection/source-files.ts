@@ -12,22 +12,7 @@ export interface SourceScanResult {
   tsFiles: string[];
 }
 
-const COMMON_IGNORE = [
-  '**/node_modules/**',
-  '**/.git/**',
-  '**/dist/**',
-  '**/coverage/**',
-  '**/docs/standards/**',
-  'docs/standards/**',
-  '**/templates/**',
-  'templates/**',
-  '**/fixtures/**',
-  'fixtures/**',
-  '**/__fixtures__/**',
-  '__fixtures__/**',
-  '**/__mocks__/**',
-  '__mocks__/**',
-];
+import { COMMON_IGNORE } from './inspection.js';
 
 function isToolingOrConfigFile(filePath: string): boolean {
   const base = path.basename(filePath);
@@ -46,9 +31,9 @@ export async function detectSourceFiles(targetRoot: string): Promise<SourceScanR
   const detected: DetectedTechnology[] = [];
 
   // TS / TSX files
-  const tsFiles = await listFiles(targetRoot, ['**/*.ts', '**/*.tsx'], {
-    ignore: COMMON_IGNORE,
-  });
+  const tsFiles = (await listFiles(targetRoot, ['**/*.ts', '**/*.tsx'], {
+    ignore: COMMON_IGNORE, followSymbolicLinks: false,
+  })).sort();
 
   if (tsFiles.length > 0) {
     const sample = tsFiles.slice(0, 5).join(', ');
@@ -60,32 +45,17 @@ export async function detectSourceFiles(targetRoot: string): Promise<SourceScanR
     });
   }
 
-  // React JSX/TSX
-  const reactFiles = tsFiles
-    .filter((f) => f.endsWith('.tsx'))
-    .concat(await listFiles(targetRoot, '**/*.jsx', { ignore: COMMON_IGNORE }));
-
-  if (reactFiles.length > 0) {
-    const sample = reactFiles.slice(0, 5).join(', ');
-    detected.push({
-      id: 'react',
-      evidence: [`React component files found (${reactFiles.length} files, e.g. ${sample})`],
-      confidence: 'high',
-      category: 'framework',
-    });
-  }
-
   // JS / JSX files
-  const jsFiles = await listFiles(targetRoot, ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'], {
-    ignore: COMMON_IGNORE,
-  });
+  const jsFiles = (await listFiles(targetRoot, ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'], {
+    ignore: COMMON_IGNORE, followSymbolicLinks: false,
+  })).sort();
 
   const appJsFiles = jsFiles.filter((f) => !isToolingOrConfigFile(f));
 
   // CSS Modules
-  const cssModuleFiles = await listFiles(targetRoot, ['**/*.module.css', '**/*.module.scss', '**/*.module.sass'], {
-    ignore: COMMON_IGNORE,
-  });
+  const cssModuleFiles = (await listFiles(targetRoot, ['**/*.module.css', '**/*.module.scss', '**/*.module.sass'], {
+    ignore: COMMON_IGNORE, followSymbolicLinks: false,
+  })).sort();
   if (cssModuleFiles.length > 0) {
     const sample = cssModuleFiles.slice(0, 5).join(', ');
     detected.push({
@@ -97,9 +67,9 @@ export async function detectSourceFiles(targetRoot: string): Promise<SourceScanR
   }
 
   // CSS, SCSS, and Sass files
-  const allCssFiles = await listFiles(targetRoot, ['**/*.css', '**/*.scss', '**/*.sass'], {
-    ignore: COMMON_IGNORE,
-  });
+  const allCssFiles = (await listFiles(targetRoot, ['**/*.css', '**/*.scss', '**/*.sass'], {
+    ignore: COMMON_IGNORE, followSymbolicLinks: false,
+  })).sort();
   if (allCssFiles.length > 0) {
     const sample = allCssFiles.slice(0, 5).join(', ');
     detected.push({

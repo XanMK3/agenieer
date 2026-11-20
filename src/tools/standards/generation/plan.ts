@@ -81,6 +81,8 @@ export function extractActiveIds(readmeContent: string): Set<string> {
     'data-safety.md': 'data-safety',
     'javascript.md': 'javascript',
     'typescript.md': 'typescript',
+    'html.md': 'html',
+    'vue.md': 'vue',
     'react.md': 'react',
     'css.md': 'css',
     'tailwind.md': 'tailwind',

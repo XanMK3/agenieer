@@ -29,6 +29,12 @@ export async function runDetect(targetRoot: string): Promise<void> {
     const categoryLabel = tech.category ? ` [${tech.category}]` : '';
     const confidenceLabel = tech.confidence !== 'high' ? ` (confidence: ${tech.confidence})` : '';
     console.log(`  ${tech.id}${categoryLabel}${confidenceLabel}`);
+    if (tech.id === 'react') {
+      console.log(`    Rendering target: ${tech.reactTarget ?? 'unknown'}`);
+      for (const platform of ['web', 'native'] as const) {
+        for (const evidence of tech.platformEvidence?.[platform] ?? []) console.log(`    ${platform}: ${evidence}`);
+      }
+    }
     for (const ev of tech.evidence) {
       console.log(`    - ${ev}`);
     }
@@ -46,6 +52,9 @@ export async function runDetect(targetRoot: string): Promise<void> {
     console.log('');
     for (const std of standards) {
       console.log(`  ${std.outputFile}`);
+      if (std.id === 'html' && !detected.some((tech) => tech.id === 'html')) {
+        console.log('    Inherited through Vue and/or web-capable React');
+      }
       console.log(`    Patterns: ${std.applicablePatterns.slice(0, 3).join(', ')}${std.applicablePatterns.length > 3 ? ' ...' : ''}`);
       console.log(`    Context:  ${std.usageContext}`);
     }
