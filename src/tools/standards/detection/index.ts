@@ -2,6 +2,7 @@ import { DetectedTechnology } from '../types.js';
 import { detectDependencies } from './dependencies.js';
 import { detectConfigFiles } from './config-files.js';
 import { detectSourceFiles } from './source-files.js';
+import { detectFrameworks, classifyReactTarget } from './frameworks.js';
 import { detectTesting } from './testing.js';
 
 export async function detectTechnologies(targetRoot: string): Promise<DetectedTechnology[]> {
@@ -9,7 +10,9 @@ export async function detectTechnologies(targetRoot: string): Promise<DetectedTe
   const configDetected = await detectConfigFiles(targetRoot);
   const sourceScan = await detectSourceFiles(targetRoot);
 
-  const initialSignals = [...depDetected, ...configDetected, ...sourceScan.detected];
+  const frameworkScan = await detectFrameworks(targetRoot);
+
+  const initialSignals = [...depDetected, ...configDetected, ...sourceScan.detected, ...frameworkScan.detected];
 
   const testScan = await detectTesting(targetRoot, initialSignals);
   const allSignals = [...initialSignals, ...testScan.detected];
@@ -53,7 +56,7 @@ export async function detectTechnologies(targetRoot: string): Promise<DetectedTe
   const hasTs = map.has('typescript');
 
   if (hasTs) {
-    if (sourceScan.hasJsAppFiles) {
+    if (sourceScan.hasJsAppFiles || frameworkScan.hasSfcJs) {
       // Genuinely mixed codebase
       if (!map.has('javascript')) {
         map.set('javascript', {
@@ -92,5 +95,13 @@ export async function detectTechnologies(targetRoot: string): Promise<DetectedTe
     });
   }
 
-  return result;
+  const react = result.find((technology) => technology.id === 'react');
+  if (react) {
+    const web = [...new Set(allSignals.flatMap((signal) => signal.platformEvidence?.web ?? []))].sort();
+    const native = [...new Set(allSignals.flatMap((signal) => signal.platformEvidence?.native ?? []))].sort();
+    react.platformEvidence = { web, native };
+    react.reactTarget = classifyReactTarget(web.length > 0, native.length > 0);
+  }
+  for (const technology of result) technology.evidence.sort();
+  return result.sort((a, b) => a.id.localeCompare(b.id));
 }

@@ -3,22 +3,7 @@ import fs from 'node:fs/promises';
 import { DetectedTechnology } from '../types.js';
 import { listFiles } from '@/core/filesystem.js';
 
-const TEST_IGNORE = [
-  '**/node_modules/**',
-  '**/.git/**',
-  '**/dist/**',
-  '**/coverage/**',
-  '**/docs/standards/**',
-  'docs/standards/**',
-  '**/templates/**',
-  'templates/**',
-  '**/fixtures/**',
-  'fixtures/**',
-  '**/__fixtures__/**',
-  '__fixtures__/**',
-  '**/__mocks__/**',
-  '__mocks__/**',
-];
+import { COMMON_IGNORE } from './inspection.js';
 
 export interface TestingScanResult {
   detected: DetectedTechnology[];
@@ -33,7 +18,7 @@ export async function detectTesting(
   const detected: DetectedTechnology[] = [];
 
   // Find test files
-  const testFiles = await listFiles(
+  const testFiles = (await listFiles(
     targetRoot,
     [
       '**/*.test.{ts,tsx,js,jsx,mjs,cjs}',
@@ -41,8 +26,8 @@ export async function detectTesting(
       '**/__tests__/**/*.{ts,tsx,js,jsx,mjs,cjs}',
       '**/tests/**/*.{ts,tsx,js,jsx,mjs,cjs}',
     ],
-    { ignore: TEST_IGNORE }
-  );
+    { ignore: COMMON_IGNORE, followSymbolicLinks: false }
+  )).sort();
 
   const hasTestFiles = testFiles.length > 0;
 

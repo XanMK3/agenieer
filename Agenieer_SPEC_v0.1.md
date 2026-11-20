@@ -608,3 +608,20 @@ These decisions superseded earlier proposals, including `--yes` and non-interact
 ---
 
 **Guiding principle:** *Agenieer should make an existing repository agent-ready without taking ownership of its codebase or silently rewriting its engineering decisions.*
+
+
+## HTML/Vue and platform-aware React extension (2026-11-20)
+
+This approved extension supersedes the initial language/framework list, four-prompt selector restriction, and React-specific ownership of shared HTML rules above. Historical v0.1 decisions remain recorded; current behavior is described in [Standards Tool](docs/standards-tool.md#5-html-vue-and-react-target-extension).
+
+- Bundle 14 standards, adding HTML and Vue to the previous 12. HTML detects standalone `.html`/`.htm` without a manifest. Vue detects strong dependencies, source/imports, and static integrations; generic Vite or supporting packages alone are insufficient.
+- Inspect Vue SFC embedded script/style declarations with bounded lightweight inspection, conservative external sources, common exclusions, and reportable evidence. Never execute configuration or introduce a compiler/HTML parser for detection.
+- Treat JSX/TSX as language evidence, not automatic React recognition. React, Vue, and alternative JSX runtimes require framework-specific evidence.
+- Preserve `react`; classify its target as web, native, mixed, or unknown using structured evidence. Vue always requires HTML; React requires HTML only for web/mixed targets. Independent HTML evidence remains valid, and transitive standards are deduplicated deterministically.
+- Route by file patterns plus framework and task context. HTML applies to relevant browser markup, not unrelated SFC logic/styles, hooks/composables, or native components. React Native Web output alone does not make native component authoring HTML.
+- Offer HTML-only and Vue JavaScript/TypeScript guided choices. Manually selected React includes an explicit target choice with unknown as the initial value. Detected stacks retain automatic initialization.
+- Centralize shared HTML rules in `html.md`; keep React/Vue specifics in their templates. Review version-sensitive Vue APIs and retain project API style.
+- Preserve fixed root instructions, unmanaged content, customized standards, conflicts, dry runs, non-interactive behavior, deactivation/reactivation, and zero-detection routing preservation.
+- Regression coverage includes positive/negative framework signals, SFC language cases, platform combinations, resolver composition, contextual routing, guided choices, CLI evidence, and lifecycle transitions. Existing styling/testing/Data Safety behavior remains required.
+
+Separate Preact, React Native, Sass, and Vue testing templates, automatic migrations/formatting, AI detection, full parsers, and change-level routing analysis remain out of scope.

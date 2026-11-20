@@ -17,7 +17,7 @@ import {
   logWarn,
   logError,
 } from '@/core/logger.js';
-import { DetectedTechnology } from '../types.js';
+import { DetectedTechnology, ReactTarget } from '../types.js';
 import { ResolvedStandard } from '../resolver.js';
 import { ChangePlan, PlannedChange } from '@/core/change-plan.js';
 import { preflightPlan } from '../generation/plan.js';
@@ -60,7 +60,7 @@ export async function runInit(options: InitOptions): Promise<number> {
     return 1;
   }
 
-  const supportedIds = new Set(['javascript', 'typescript', 'react', 'css', 'css-modules', 'tailwind', 'styled-components', 'testing', 'vitest', 'playwright-test', 'react-testing-library']);
+  const supportedIds = new Set(['html', 'vue', 'javascript', 'typescript', 'react', 'css', 'css-modules', 'tailwind', 'styled-components', 'testing', 'vitest', 'playwright-test', 'react-testing-library']);
   const supportedDetected = detected.filter((d) => supportedIds.has(d.id));
   const hasRecognizedStack = supportedDetected.length > 0;
 
@@ -153,7 +153,7 @@ export async function runInit(options: InitOptions): Promise<number> {
   return await executePlan(plan, targetRoot, false);
 }
 
-async function runGuidedSelector(): Promise<DetectedTechnology[] | null> {
+export async function runGuidedSelector(): Promise<DetectedTechnology[] | null> {
   // Dynamic import to avoid loading @clack/prompts when not needed
   const { select, multiselect, intro, outro, cancel, isCancel } = await import('@clack/prompts');
 
@@ -164,6 +164,7 @@ async function runGuidedSelector(): Promise<DetectedTechnology[] | null> {
     options: [
       { value: 'typescript', label: 'TypeScript' },
       { value: 'javascript', label: 'JavaScript' },
+      { value: 'html', label: 'HTML only (no script language)' },
     ],
   });
 
@@ -172,10 +173,11 @@ async function runGuidedSelector(): Promise<DetectedTechnology[] | null> {
     return null;
   }
 
-  const framework = await select({
+  const framework = language === 'html' ? 'none' : await select({
     message: 'Which framework?',
     options: [
       { value: 'react', label: 'React' },
+      { value: 'vue', label: 'Vue' },
       { value: 'none', label: 'None' },
     ],
   });
@@ -183,6 +185,25 @@ async function runGuidedSelector(): Promise<DetectedTechnology[] | null> {
   if (isCancel(framework)) {
     cancel('Selection cancelled.');
     return null;
+  }
+
+  let reactTarget: ReactTarget = 'unknown';
+  if (framework === 'react') {
+    const target = await select<ReactTarget>({
+      message: 'Where does React render?',
+      initialValue: 'unknown',
+      options: [
+        { value: 'unknown', label: 'Unknown / not established' },
+        { value: 'web', label: 'Web (DOM)' },
+        { value: 'native', label: 'React Native' },
+        { value: 'mixed', label: 'Both web and native' },
+      ],
+    });
+    if (isCancel(target)) {
+      cancel('Selection cancelled.');
+      return null;
+    }
+    reactTarget = target;
   }
 
   const stylingOptions = [
@@ -239,6 +260,7 @@ async function runGuidedSelector(): Promise<DetectedTechnology[] | null> {
   if (framework !== 'none') {
     result.push({
       id: framework as string,
+      ...(framework === 'react' ? { reactTarget } : {}),
       evidence: ['Guided stack selection'],
       confidence: 'high',
       category: 'framework',

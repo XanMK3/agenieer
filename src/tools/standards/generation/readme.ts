@@ -40,6 +40,8 @@ export function renderReadmeSection(standards: ResolvedStandard[], unsupportedRu
     lines.push('');
     lines.push('## Applicable File Patterns');
     lines.push('');
+    lines.push('Patterns identify candidates, not framework ownership. Combine them with the task and framework evidence. For mixed-content files, read only standards relevant to the portion being edited. JSX/TSX alone does not establish React.');
+    lines.push('');
 
     for (const std of standards) {
       const relLink = std.outputFile.replace(/^docs\/standards\//, '');
@@ -62,6 +64,22 @@ export function renderReadmeSection(standards: ResolvedStandard[], unsupportedRu
     const hasVitest = standards.some((s) => s.id === 'vitest');
     const hasRtl = standards.some((s) => s.id === 'react-testing-library');
     const hasPlaywright = standards.some((s) => s.id === 'playwright-test');
+
+    const hasHtml = standards.some((s) => s.id === 'html');
+    const hasVue = standards.some((s) => s.id === 'vue');
+    const hasCss = standards.some((s) => s.id === 'css');
+    const language = hasTs && hasJs ? 'TypeScript or JavaScript, matching the source' : hasTs ? 'TypeScript' : hasJs ? 'JavaScript' : '';
+    const languageSuffix = language ? ` + **${language}**` : '';
+    if (hasHtml) lines.push('- Standalone HTML → **HTML**');
+    if (hasVue && hasHtml) lines.push('- Vue template markup → **Vue** + **HTML**; add the relevant language when expressions need it');
+    if (hasVue && language) lines.push(`- Vue composable or SFC script logic → **Vue**${languageSuffix}; HTML only when markup is relevant`);
+    if (hasVue && hasCss) lines.push('- Vue SFC style block → **CSS** + applicable **Vue** rules');
+    if (hasReact && hasHtml) lines.push(`- React web component markup → **React** + **HTML**${languageSuffix}`);
+    if (hasReact) {
+      lines.push(`- React Native component or React hook logic → **React**${languageSuffix}; no HTML by default`);
+      lines.push('- React Native Web: apply HTML only where actual DOM semantics are relevant; web output does not make native-style components ordinary HTML');
+    }
+    if (hasReact && hasVue) lines.push('- Mixed React/Vue repositories: establish ownership from imports, configuration, and the task; shared JSX/TSX patterns do not assign a framework');
 
     if (hasTs && hasReact && hasVitest && hasRtl) {
       lines.push('- `Button.test.tsx` (Vitest + RTL): read **TypeScript** + **React** + **Testing** + **Vitest** + **React Testing Library**');
@@ -114,6 +132,8 @@ function idToTitle(id: string): string {
     'data-safety': 'Data Safety',
     javascript: 'JavaScript',
     typescript: 'TypeScript',
+    html: 'HTML / Semantic Markup',
+    vue: 'Vue.js',
     react: 'React',
     css: 'CSS',
     tailwind: 'Tailwind CSS',

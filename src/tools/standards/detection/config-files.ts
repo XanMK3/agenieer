@@ -1,7 +1,5 @@
-import path from 'node:path';
-import fs from 'node:fs/promises';
 import { DetectedTechnology } from '../types.js';
-import { listFiles, fileExists } from '@/core/filesystem.js';
+import { listFiles } from '@/core/filesystem.js';
 
 export async function detectConfigFiles(targetRoot: string): Promise<DetectedTechnology[]> {
   const detected: DetectedTechnology[] = [];
@@ -70,25 +68,6 @@ export async function detectConfigFiles(targetRoot: string): Promise<DetectedTec
       confidence: 'high',
       category: 'test-runner',
     });
-  }
-
-  // Babel configs for React preset
-  const babelFiles = await listFiles(targetRoot, ['.babelrc', 'babel.config.{js,ts,mjs,cjs,json}']);
-  for (const babelFile of babelFiles) {
-    try {
-      const content = await fs.readFile(path.join(targetRoot, babelFile), 'utf8');
-      if (content.includes('@babel/preset-react') || content.includes('babel-preset-react')) {
-        detected.push({
-          id: 'react',
-          evidence: [`Babel configuration in "${babelFile}" includes React preset`],
-          confidence: 'medium',
-          category: 'framework',
-        });
-        break;
-      }
-    } catch {
-      // Ignore read errors
-    }
   }
 
   return detected;

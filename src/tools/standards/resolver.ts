@@ -4,7 +4,9 @@ const TEMPLATE_REGISTRY = {
   'data-safety': { file: 'data-safety.md', requires: [] as string[] },
   javascript: { file: 'javascript.md', requires: ['data-safety'] },
   typescript: { file: 'typescript.md', requires: ['data-safety'] },
+  html: { file: 'html.md', requires: [] as string[] },
   react: { file: 'react.md', requires: [] as string[] },
+  vue: { file: 'vue.md', requires: ['html'] },
   css: { file: 'css.md', requires: [] as string[] },
   tailwind: { file: 'tailwind.md', requires: ['css'] },
   'css-modules': { file: 'css-modules.md', requires: ['css'] },
@@ -32,23 +34,31 @@ const APPLICABILITY: Record<string, { patterns: string[]; context: string }> = {
     context: 'External or untrusted data; data import/export or transformation; persistence and generated datasets; large inputs, downloads, uploads, or streams. Read only when the task involves these contexts.',
   },
   javascript: {
-    patterns: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],
-    context: 'JavaScript source files and application code',
+    patterns: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs', '**/*.vue'],
+    context: 'JavaScript application code, including Vue SFC script blocks using JavaScript',
   },
   typescript: {
-    patterns: ['**/*.ts', '**/*.tsx'],
-    context: 'TypeScript source files and application code',
+    patterns: ['**/*.ts', '**/*.tsx', '**/*.vue'],
+    context: 'TypeScript application code, including Vue SFC script blocks using lang="ts"',
   },
   react: {
-    patterns: ['**/*.tsx', '**/*.jsx', 'src/components/**/*', 'src/hooks/**/*', 'src/pages/**/*'],
-    context: 'React components, hooks, and JSX/TSX files',
+    patterns: ['**/*.tsx', '**/*.jsx', '**/*.ts', '**/*.js'],
+    context: 'React components and hooks only when framework evidence or task context establishes React; JSX/TSX and generic component/hook directories do not establish ownership. Native components do not require HTML. React Native Web uses HTML only where DOM semantics apply.',
+  },
+  html: {
+    patterns: ['**/*.html', '**/*.htm', '**/*.vue', '**/*.jsx', '**/*.tsx'],
+    context: 'Standalone HTML and markup portions of Vue templates or React DOM components. Read only when markup semantics are relevant, not for unrelated hooks, composables, SFC script/style changes, or native-style components merely rendered on the web.',
+  },
+  vue: {
+    patterns: ['**/*.vue', '**/*.js', '**/*.ts', '**/*.jsx', '**/*.tsx'],
+    context: 'Vue SFCs, components and composables when Vue ownership is established. Compose with HTML for templates, the script language for logic, and CSS for supported style blocks.',
   },
   css: {
-    patterns: ['**/*.css', '**/*.scss', '**/*.sass'],
-    context: 'CSS and styling files',
+    patterns: ['**/*.css', '**/*.scss', '**/*.sass', '**/*.vue'],
+    context: 'CSS and styling files, including Vue SFC CSS/SCSS/Sass style blocks',
   },
   tailwind: {
-    patterns: ['**/*.css', '**/*.tsx', '**/*.jsx', '**/*.html'],
+    patterns: ['**/*.css', '**/*.tsx', '**/*.jsx', '**/*.html', '**/*.vue'],
     context: 'Tailwind CSS utility usage in source files and stylesheets',
   },
   'css-modules': {
@@ -94,7 +104,7 @@ const UNSUPPORTED_IDS = new Set(['jest', 'cypress']);
 /**
  * Expand a set of technology ids to include all transitive requirements.
  */
-function expandTransitive(ids: Set<TemplateId>): Set<TemplateId> {
+function expandTransitive(ids: Set<TemplateId>, reactWeb: boolean): Set<TemplateId> {
   const result = new Set(ids);
   let changed = true;
   while (changed) {
@@ -102,7 +112,7 @@ function expandTransitive(ids: Set<TemplateId>): Set<TemplateId> {
     for (const id of Array.from(result)) {
       const entry = TEMPLATE_REGISTRY[id];
       if (!entry) continue;
-      for (const req of entry.requires) {
+      for (const req of [...entry.requires, ...(id === 'react' && reactWeb ? ['html'] : [])]) {
         const reqId = req as TemplateId;
         if (!result.has(reqId)) {
           result.add(reqId);
@@ -141,14 +151,16 @@ export function resolveStandards(detected: DetectedTechnology[]): ResolvedStanda
   }
 
   // Expand transitive requirements (e.g., tailwind → css)
-  const expanded = expandTransitive(selectedIds);
+  const expanded = expandTransitive(selectedIds, detected.some((d) => d.id === 'react' && (d.reactTarget === 'web' || d.reactTarget === 'mixed')));
 
   // Build ordered output: use a deterministic stable order matching the registry
   const registryOrder: TemplateId[] = [
     'data-safety',
     'javascript',
     'typescript',
+    'html',
     'react',
+    'vue',
     'css',
     'tailwind',
     'css-modules',
