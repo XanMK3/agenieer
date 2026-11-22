@@ -625,3 +625,18 @@ This approved extension supersedes the initial language/framework list, four-pro
 - Regression coverage includes positive/negative framework signals, SFC language cases, platform combinations, resolver composition, contextual routing, guided choices, CLI evidence, and lifecycle transitions. Existing styling/testing/Data Safety behavior remains required.
 
 Separate Preact, React Native, Sass, and Vue testing templates, automatic migrations/formatting, AI detection, full parsers, and change-level routing analysis remain out of scope.
+
+
+## Asynchronous concurrency extension (2026-11-22)
+
+This extension increases the bundled inventory from 14 to 15 without rewriting the historical baseline above. See [the current contract](docs/standards-tool.md#6-asynchronous-concurrency-extension).
+
+- Add compact `async-concurrency.md`, inherited by JavaScript, TypeScript, React, and Vue, deduplicated after Data Safety. Preserve Vue → HTML and React's conditional web/mixed → HTML dependency.
+- Route contextually before asynchronous work is introduced or changed; use no automatic source-file globs, detector, or guided-selector question. Render only active composition examples and track the filename in active-ID extraction.
+- Centralize explicit concurrency policy, ownership, signal propagation, cancellation, stale observable-state protection, resource cleanup, and mutation consistency. Independent/shared work must retain appropriate lifetimes. Cancellation is not rollback, and ignored results are not physically cancelled work.
+- Remove the generic JavaScript cancellation bullet. Retain React's external synchronization and event-handler boundary with lifecycle cleanup. Retain version-compatible Vue watcher cleanup without requiring migration. Preserve unrelated template rules.
+- Distinguish expected cancellation from unrelated failures; an aborted signal alone does not classify an error. Preserve real errors without letting stale errors or finalizers affect newer state.
+- Preserve non-destructive initialization, dry-run, conflict behavior, unmanaged content, fixed root instructions, deactivation/reactivation, and zero-detection routing. Existing generated templates are not automatically migrated to bundled wording.
+- Verify resolver/routing/template/lifecycle integration and deterministic test-only executable examples for out-of-order completion, A → B → A, processing cancellation, stale errors/finalizers, disposal, non-cancellable APIs, independent/shared work, and concurrent writes. These examples demonstrate the contract, not downstream compliance or static proof of race freedom.
+
+Runtime concurrency engines, target-application modifications, new dependencies, detection changes, and destructive template upgrades remain out of scope.

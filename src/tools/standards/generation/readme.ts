@@ -81,6 +81,20 @@ export function renderReadmeSection(standards: ResolvedStandard[], unsupportedRu
     }
     if (hasReact && hasVue) lines.push('- Mixed React/Vue repositories: establish ownership from imports, configuration, and the task; shared JSX/TSX patterns do not assign a framework');
 
+    if (standards.some((s) => s.id === 'async-concurrency')) {
+      const asyncSuffix = ' + **Asynchronous Concurrency**';
+      if (hasJs) lines.push(`- Asynchronous JS service → **JavaScript**${asyncSuffix}`);
+      if (hasTs) lines.push(`- Asynchronous TS service → **TypeScript**${asyncSuffix}`);
+      if (hasReact) lines.push(`- React data-loading Effect → **React**${languageSuffix}${asyncSuffix}`);
+      if (hasVue) lines.push(`- Vue asynchronous watcher → **Vue**${languageSuffix}${asyncSuffix}`);
+      const owner = language || (hasReact ? 'React' : hasVue ? 'Vue' : '');
+      if (owner) lines.push(`- User selects an item and loads its file/details → **${owner}**${asyncSuffix}; add the active framework standard when relevant`);
+      if (language && standards.some((s) => s.id === 'data-safety')) {
+        lines.push(`- Concurrent persistence → **${language}**${asyncSuffix} + **Data Safety** when relevant`);
+      }
+    }
+    if (language) lines.push(`- Unrelated synchronous utility → **${language}** only`);
+
     if (hasTs && hasReact && hasVitest && hasRtl) {
       lines.push('- `Button.test.tsx` (Vitest + RTL): read **TypeScript** + **React** + **Testing** + **Vitest** + **React Testing Library**');
     } else if (hasTs && hasReact && hasVitest) {
@@ -130,6 +144,7 @@ export function renderReadmeSection(standards: ResolvedStandard[], unsupportedRu
 function idToTitle(id: string): string {
   const titles: Record<string, string> = {
     'data-safety': 'Data Safety',
+    'async-concurrency': 'Asynchronous Concurrency',
     javascript: 'JavaScript',
     typescript: 'TypeScript',
     html: 'HTML / Semantic Markup',

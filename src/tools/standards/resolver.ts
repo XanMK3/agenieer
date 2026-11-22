@@ -2,11 +2,12 @@ import { DetectedTechnology } from './types.js';
 
 const TEMPLATE_REGISTRY = {
   'data-safety': { file: 'data-safety.md', requires: [] as string[] },
-  javascript: { file: 'javascript.md', requires: ['data-safety'] },
-  typescript: { file: 'typescript.md', requires: ['data-safety'] },
+  'async-concurrency': { file: 'async-concurrency.md', requires: [] as string[] },
+  javascript: { file: 'javascript.md', requires: ['data-safety', 'async-concurrency'] },
+  typescript: { file: 'typescript.md', requires: ['data-safety', 'async-concurrency'] },
   html: { file: 'html.md', requires: [] as string[] },
-  react: { file: 'react.md', requires: [] as string[] },
-  vue: { file: 'vue.md', requires: ['html'] },
+  react: { file: 'react.md', requires: ['async-concurrency'] },
+  vue: { file: 'vue.md', requires: ['html', 'async-concurrency'] },
   css: { file: 'css.md', requires: [] as string[] },
   tailwind: { file: 'tailwind.md', requires: ['css'] },
   'css-modules': { file: 'css-modules.md', requires: ['css'] },
@@ -29,6 +30,10 @@ export interface ResolvedStandard {
 
 /** Mapping from technology id to file patterns and usage context */
 const APPLICABILITY: Record<string, { patterns: string[]; context: string }> = {
+  'async-concurrency': {
+    patterns: [],
+    context: 'Read when introducing, modifying, or reviewing asynchronous work involving overlapping or changing lifetimes: requests, file loads, user selections, Effects, watchers, background tasks, subscriptions, shared work, or concurrent mutations. Apply cancellation, ownership, and stale-result protection.',
+  },
   'data-safety': {
     patterns: [],
     context: 'External or untrusted data; data import/export or transformation; persistence and generated datasets; large inputs, downloads, uploads, or streams. Read only when the task involves these contexts.',
@@ -156,6 +161,7 @@ export function resolveStandards(detected: DetectedTechnology[]): ResolvedStanda
   // Build ordered output: use a deterministic stable order matching the registry
   const registryOrder: TemplateId[] = [
     'data-safety',
+    'async-concurrency',
     'javascript',
     'typescript',
     'html',

@@ -11,7 +11,7 @@
 
 ## Effects and Rendering
 
-- Use `watch`/`watchEffect` for reactive side effects. Cancel or invalidate obsolete async work, and clean up listeners, timers, subscriptions, and other external resources. Choose cleanup APIs supported by the project's Vue version.
+- Use watchers for reactive side effects, with invalidation/disposal cleanup through APIs supported by the project's Vue version. Follow Asynchronous Concurrency for asynchronous work.
 - Use template refs and lifecycle-safe access for direct DOM work. In SSR contexts, guard browser-only APIs and avoid server/client rendering mismatches.
 - Keep template expressions simple; put complex derivations in computed values and event logic in functions/methods.
 - Use stable, unique `v-for` keys; avoid index keys when identity can change. Do not put `v-if` and `v-for` on the same element; use a computed filter or an appropriate surrounding template.
