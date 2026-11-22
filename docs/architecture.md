@@ -79,7 +79,7 @@ Target Repository
 ## 3. Key Invariants
 
 ### Invariant 1: Small Fixed AGENTS.md Router
-`src/tools/standards/generation/agents.ts` renders a minimal, stack-independent instruction block. It accepts zero parameters and never imports or interpolates template bodies. Whether a repository uses 3 standards or 14, the managed section in `AGENTS.md` is byte-for-byte identical.
+`src/tools/standards/generation/agents.ts` renders a minimal, stack-independent instruction block. It accepts zero parameters and never imports or interpolates template bodies. Whether a repository uses 3 standards or 15, the managed section in `AGENTS.md` is byte-for-byte identical.
 
 ### Invariant 2: Non-Destructive Standards Lifecycle
 Agenieer never deletes or overwrites existing standalone standards files. When a technology is removed from a project, its reference is removed from the managed section in `docs/standards/README.md` only; its file remains intact on disk. If the technology is re-added later, the existing file is reused and its route restored.
@@ -99,3 +99,11 @@ Agenieer never deletes or overwrites existing standalone standards files. When a
 The resolver expands Vue → HTML and conditionally expands React → HTML for web/mixed targets. Missing target context is unknown. Its set-based expansion deduplicates HTML alongside existing CSS, testing, and Data Safety dependencies; explicit HTML evidence remains independent. Guided React selection supplies the same target field.
 
 Routing remains metadata-driven and task-sensitive. Shared extensions are candidate patterns, not framework ownership. The generated index explains markup versus script/style applicability and native-style components with web output. The root router and standalone-file preservation policies are unchanged. Detection never scans generated standards to sustain obsolete routes.
+
+## 5. Asynchronous Concurrency Extension
+
+The registry gives JavaScript, TypeScript, React, and Vue a shared `async-concurrency` requirement with no dependencies of its own. Set expansion deduplicates it and explicit ordering places it after Data Safety. React's conditional HTML edge and Vue's unconditional HTML edge remain unchanged.
+
+Applicability is contextual with no file patterns. The README renderer supplies the display title and active-only examples; `extractActiveIds()` recognizes the filename for activation, deactivation, reactivation, and zero-detection preservation. The root router remains fixed. No detectors, runtime request managers, or target-code execution are introduced.
+
+The compact template owns generic concurrency policy, cancellation, ownership, and stale-result safety. React and Vue retain lifecycle integration; Data Safety retains persistence integrity. Existing generated template bodies are preserved, so bundled rule consolidation is not an automatic migration. Test-only executable examples demonstrate the contract without claiming to enforce downstream behavior. See [the extension contract](standards-tool.md#6-asynchronous-concurrency-extension).

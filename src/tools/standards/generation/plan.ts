@@ -78,6 +78,7 @@ export function extractActiveIds(readmeContent: string): Set<string> {
   let match: RegExpExecArray | null;
 
   const fileToId: Record<string, string> = {
+    'async-concurrency.md': 'async-concurrency',
     'data-safety.md': 'data-safety',
     'javascript.md': 'javascript',
     'typescript.md': 'typescript',

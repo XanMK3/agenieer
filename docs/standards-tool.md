@@ -29,11 +29,12 @@ Detection is deterministic, offline, and dependency-first. A recognized dependen
 
 ## 2. Template Registry & Transitive Dependencies
 
-All 14 templates are bundled statically with the CLI:
+All 15 templates are bundled statically with the CLI:
 
 ```text
 templates/standards/
 ├── data-safety.md
+├── async-concurrency.md
 ├── javascript.md
 ├── typescript.md
 ├── html.md
@@ -51,10 +52,10 @@ templates/standards/
 ```
 
 ### Transitive Requirements
-- `vue` -> requires `html`
-- `react` -> requires `html` only for web/mixed rendering targets
-- `javascript` -> requires `data-safety`
-- `typescript` -> requires `data-safety`
+- `vue` -> requires `html` and `async-concurrency`
+- `react` -> requires `async-concurrency`; also `html` for web/mixed rendering targets
+- `javascript` -> requires `data-safety` and `async-concurrency`
+- `typescript` -> requires `data-safety` and `async-concurrency`
 - `tailwind` -> requires `css`
 - `css-modules` -> requires `css`
 - `styled-components` -> requires `css`
@@ -164,3 +165,33 @@ The HTML standard centralizes semantics, accessibility, forms, and raw HTML/URL 
 Vue guidance respects API style and version, allows framework naming exceptions, distinguishes Vue 3.5 reactive props destructuring and Vue 3.4 `defineModel`, and keeps SSR/optimizations conditional. Generic markup requirements live in HTML rather than being repeated in Vue or React.
 
 Review references: [Vue props](https://vuejs.org/guide/components/props.html), [SFC APIs](https://vuejs.org/api/sfc-script-setup.html), [watchers](https://vuejs.org/guide/essentials/watchers.html), [computed values](https://vuejs.org/guide/essentials/computed.html), [essential style guide](https://vuejs.org/style-guide/rules-essential.html), [security](https://vuejs.org/guide/best-practices/security.html), [performance](https://vuejs.org/guide/best-practices/performance.html), [React DOM conventions](https://react.dev/reference/react-dom/components/common), [MDN HTML elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements), and [WAI forms](https://www.w3.org/WAI/tutorials/forms/).
+
+## 6. Asynchronous Concurrency Extension
+
+`async-concurrency.md` is a shared standard inherited by JavaScript, TypeScript, React, and Vue, including explicit framework selection without language detection. Multiple parents generate it once, after Data Safety and before language standards. HTML-only and CSS-only projects do not select it. It has no detector or guided-selection question; `standards detect` reports it among resolved standards.
+
+Selection and reading are separate: contextual metadata has no file globs. Read the standard before introducing, modifying, or reviewing overlapping requests, file loads, changing user selections, Effects, watchers, background tasks, subscriptions, shared operations, or concurrent mutations. Unrelated synchronous source edits do not require it. Generated examples compose only active standards.
+
+### Ownership and consistency
+
+Choose latest-wins, parallel, serialized, deduplicated/shared, or transactional/versioned behavior explicitly. Latest-wins requires both aborting obsolete supported work and preventing stale observable commits. Propagate the owner's signal through I/O and processing layers; check it after asynchronous boundaries and before commits. Protect data, errors, loading, progress, completion callbacks, notifications, and newer-operation cleanup. A → B → A contains three operation identities; item IDs alone cannot distinguish them.
+
+Expected cancellation is control flow. An aborted signal alone does not establish that a caught error came from cancellation: preserve unrelated failures through the appropriate error-handling path while preventing stale errors from changing current UI state. Observe Promise failures and release owned resources on cancellation/disposal. Independent work has independent lifetimes; shared work remains alive while active consumers require it.
+
+Aborting a client mutation does not roll back accepted server work. Choose serialization, transactions, version checks, or idempotency controls for concurrent writes. Data Safety continues to own validation, persistence integrity, and atomic replacement.
+
+### Framework and API integration
+
+React retains Effect cleanup on dependency changes, unmount, and development lifecycle re-runs. Effects synchronize external systems; event handlers and ordinary data flow do not belong in Effects merely because they are asynchronous.
+
+Vue uses cleanup APIs supported by the project's version. Callback-based watcher cleanup (`onCleanup` passed to a watcher callback or `watchEffect`) remains an option in Vue 3. `onWatcherCleanup()` requires Vue 3.5+ and registration during synchronous watcher execution, before an `await`; callback-based cleanup is not subject to that same synchronous restriction. Register cleanup promptly so invalidation cannot precede ownership setup. Do not require an API migration. See [Vue watcher cleanup](https://vuejs.org/guide/essentials/watchers.html#side-effect-cleanup).
+
+Prefer an existing request manager's ownership and supplied signal over a competing controller. For example, pass [TanStack Query's signal](https://tanstack.com/query/latest/docs/framework/react/guides/query-cancellation) to supported underlying APIs. Verify the library's actual cancellation behavior rather than assuming unused queries are always physically stopped.
+
+Browser `fetch()` accepts a signal. Node's [`fs.promises.readFile()`](https://nodejs.org/api/fs.html#fspromisesreadfilepath-options) also accepts one, but aborting stops internal buffering rather than individual operating-system reads. `FileReader` exposes `abort()`, while [`Blob.text()`](https://developer.mozilla.org/en-US/docs/Web/API/Blob/text) and inherited `File.text()` have no signal parameter. Where physical cancellation is unavailable, use cooperative checks and discard obsolete results; do not describe ignored results as stopped work.
+
+### Initialization and verification limits
+
+Initialization creates the shared standard only when required and missing. Existing generated or customized standards, including older JavaScript, React, and Vue rules, are never overwritten. Updating Agenieer therefore does not migrate their wording; teams must review and reconcile existing copies manually. Managed routing still updates, deactivates, and reactivates without deleting standards. Dry-run, unmanaged text, conflict exit codes, and zero-detection preservation retain their existing behavior.
+
+Resolver, routing, template, and initialization regressions test Agenieer's integration. Test-only executable contract examples use controlled Promise completion to demonstrate cancellation propagation, stale-state protection, disposal, independent/shared lifetimes, and serialized writes. They are not a production concurrency framework and do not prove generated instructions or downstream application code enforce the contract. Agenieer performs no static race-freedom analysis.

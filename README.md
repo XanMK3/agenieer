@@ -57,9 +57,9 @@ Initializes standards in the repository.
 
 ## Supported Technologies (v0.1)
 
-The CLI bundles **14 standards templates**, selected according to detected technologies and their dependencies.
+The CLI bundles **15 standards templates**, selected according to detected technologies and their dependencies.
 
-- **Cross-cutting:** Data Safety (`data-safety.md`), included by JavaScript and TypeScript
+- **Cross-cutting:** Data Safety (`data-safety.md`), included by JavaScript and TypeScript; Asynchronous Concurrency (`async-concurrency.md`), included by JavaScript, TypeScript, React, and Vue
 - **Languages and markup:** JavaScript, TypeScript, HTML
 - **Frameworks:** React, Vue
 - **Styling:** CSS, Tailwind CSS, CSS Modules, styled-components
@@ -69,6 +69,8 @@ The CLI bundles **14 standards templates**, selected according to detected techn
 Sass/SCSS uses the foundational `css.md`: either a `sass` or `sass-embedded` dependency alone, or `.css`, `.scss`, or `.sass` source files, selects CSS. CSS Modules detects `.module.css`, `.module.scss`, and `.module.sass` and includes CSS. No separate Sass template is needed.
 
 JavaScript and TypeScript both require Data Safety; mixed projects generate it only once. Dependencies control which files are generated, while the routing index controls when to read them. Read Data Safety for external or untrusted data, import/export or transformation, persistence and generated datasets, and large inputs, downloads, uploads, or streams—not for unrelated JS/TS work.
+
+Asynchronous Concurrency guides operation ownership, cancellation signal propagation, stale-state protection, and concurrent write consistency. Read it before introducing or changing asynchronous work with overlapping or changing lifetimes; synchronous utilities do not require it. See [the contract and compatibility limits](docs/standards-tool.md#6-asynchronous-concurrency-extension).
 
 HTML is detected from `.html`/`.htm` files without requiring a manifest. Vue is recognized from its dependencies, SFCs, imports, and static framework configuration; SFC script/style declarations contribute JavaScript, TypeScript, and CSS evidence. JSX/TSX extensions establish a language, not a framework.
 

@@ -38,17 +38,17 @@ function tech(id: string, reactTarget?: ReactTarget): DetectedTechnology {
 describe('conditional resolution and routing', () => {
   it.each(['web', 'native', 'mixed', 'unknown'] as const)('resolves React %s', (target) => {
     const standards = resolveStandards([tech('react', target), tech('typescript')]);
-    expect(standards.map((item) => item.id)).toEqual(['data-safety', 'typescript', ...(target === 'web' || target === 'mixed' ? ['html'] : []), 'react']);
+    expect(standards.map((item) => item.id)).toEqual(['data-safety', 'async-concurrency', 'typescript', ...(target === 'web' || target === 'mixed' ? ['html'] : []), 'react']);
   });
   it('keeps unspecified React unknown and preserves independent HTML', () => {
-    expect(resolveStandards([tech('react')]).map((item) => item.id)).toEqual(['react']);
-    expect(resolveStandards([tech('react', 'native'), tech('html')]).map((item) => item.id)).toEqual(['html', 'react']);
+    expect(resolveStandards([tech('react')]).map((item) => item.id)).toEqual(['async-concurrency', 'react']);
+    expect(resolveStandards([tech('react', 'native'), tech('html')]).map((item) => item.id)).toEqual(['async-concurrency', 'html', 'react']);
   });
   it('deduplicates shared requirements independently of detection order', () => {
     const input = [tech('react', 'web'), tech('vue'), tech('typescript'), tech('javascript'), tech('tailwind'), tech('css-modules'), tech('styled-components'), tech('vitest'), tech('playwright-test'), tech('react-testing-library')];
     const resolved = resolveStandards(input);
     expect(resolveStandards([...input].reverse())).toEqual(resolved);
-    expect(resolved.map((item) => item.id)).toEqual(['data-safety', 'javascript', 'typescript', 'html', 'react', 'vue', 'css', 'tailwind', 'css-modules', 'styled-components', 'testing', 'vitest', 'playwright-test', 'react-testing-library']);
+    expect(resolved.map((item) => item.id)).toEqual(['data-safety', 'async-concurrency', 'javascript', 'typescript', 'html', 'react', 'vue', 'css', 'tailwind', 'css-modules', 'styled-components', 'testing', 'vitest', 'playwright-test', 'react-testing-library']);
   });
   it('routes mixed content using task and framework context', () => {
     const standards = resolveStandards([tech('vue'), tech('react', 'mixed'), tech('typescript'), tech('javascript'), tech('css')]);
@@ -74,12 +74,12 @@ describe('conditional resolution and routing', () => {
 describe('guided selection', () => {
   it.each([
     ['html', 'none', undefined, ['html']],
-    ['javascript', 'vue', undefined, ['data-safety', 'javascript', 'html', 'vue']],
-    ['typescript', 'vue', undefined, ['data-safety', 'typescript', 'html', 'vue']],
-    ['typescript', 'react', 'web', ['data-safety', 'typescript', 'html', 'react']],
-    ['typescript', 'react', 'native', ['data-safety', 'typescript', 'react']],
-    ['javascript', 'react', 'mixed', ['data-safety', 'javascript', 'html', 'react']],
-    ['javascript', 'react', 'unknown', ['data-safety', 'javascript', 'react']],
+    ['javascript', 'vue', undefined, ['data-safety', 'async-concurrency', 'javascript', 'html', 'vue']],
+    ['typescript', 'vue', undefined, ['data-safety', 'async-concurrency', 'typescript', 'html', 'vue']],
+    ['typescript', 'react', 'web', ['data-safety', 'async-concurrency', 'typescript', 'html', 'react']],
+    ['typescript', 'react', 'native', ['data-safety', 'async-concurrency', 'typescript', 'react']],
+    ['javascript', 'react', 'mixed', ['data-safety', 'async-concurrency', 'javascript', 'html', 'react']],
+    ['javascript', 'react', 'unknown', ['data-safety', 'async-concurrency', 'javascript', 'react']],
   ])('selects %s / %s / %s', async (language, framework, target, expected) => {
     vi.mocked(prompts.select).mockResolvedValueOnce(language).mockResolvedValueOnce(framework);
     if (target) vi.mocked(prompts.select).mockResolvedValueOnce(target);
@@ -93,7 +93,7 @@ describe('guided selection', () => {
   it('preserves styling/testing selections and cancellation', async () => {
     vi.mocked(prompts.select).mockResolvedValueOnce('typescript').mockResolvedValueOnce('react').mockResolvedValueOnce('native');
     vi.mocked(prompts.multiselect).mockResolvedValueOnce(['tailwind']).mockResolvedValueOnce(['vitest', 'react-testing-library']);
-    expect(resolveStandards(await runGuidedSelector() ?? []).map((item) => item.id)).toEqual(['data-safety', 'typescript', 'react', 'css', 'tailwind', 'testing', 'vitest', 'react-testing-library']);
+    expect(resolveStandards(await runGuidedSelector() ?? []).map((item) => item.id)).toEqual(['data-safety', 'async-concurrency', 'typescript', 'react', 'css', 'tailwind', 'testing', 'vitest', 'react-testing-library']);
     vi.mocked(prompts.select).mockResolvedValueOnce('typescript').mockResolvedValueOnce('react').mockResolvedValueOnce(Symbol('cancel'));
     expect(await runGuidedSelector()).toBeNull();
   });
@@ -175,5 +175,52 @@ describe('initialization lifecycle and reporting', () => {
     expect(output).toContain('native:');
     expect(output).toContain('Inherited through Vue and/or web-capable React');
     expect(output.split('Applicable standards:')[0]).not.toContain('  html');
+  });
+});
+
+describe('Asynchronous Concurrency lifecycle', () => {
+  it('creates, preserves, deactivates and reactivates the shared standard', async () => {
+    await deps(['vue']);
+    expect(await initialize(true)).toBe(0);
+    expect(await fs.readdir(root)).toEqual(['package.json']);
+    expect(await initialize()).toBe(0);
+    const standard = 'docs/standards/async-concurrency.md';
+    expect(await read(standard)).toContain('# Asynchronous Concurrency');
+    await write(standard, '# Team concurrency contract\n');
+    const index = 'docs/standards/README.md';
+    const decorated = `Team notes\n${await read(index)}\nTeam footer\n`;
+    await write(index, decorated);
+    const agents = await read('AGENTS.md');
+    for (const dryRun of [true, false, false]) {
+      expect(await initialize(dryRun)).toBe(0);
+      expect(await read(index)).toBe(decorated);
+      expect(await read(standard)).toBe('# Team concurrency contract\n');
+      expect(await read('AGENTS.md')).toBe(agents);
+    }
+    // Empty detection retains prior routes, including the new active-ID mapping.
+    await deps([]);
+    expect(await initialize()).toBe(0);
+    expect(await read(index)).toBe(decorated);
+    // A recognized unrelated stack deactivates without deleting.
+    await write('index.html', '<h1>HTML only</h1>');
+    expect(await initialize()).toBe(0);
+    expect(extractActiveIds(await read(index))).not.toContain('async-concurrency');
+    expect(await read(standard)).toBe('# Team concurrency contract\n');
+    await deps(['vue']);
+    expect(await initialize()).toBe(0);
+    expect(extractActiveIds(await read(index))).toContain('async-concurrency');
+    expect(await read(standard)).toBe('# Team concurrency contract\n');
+    expect(await read(index)).toContain('Team notes\n');
+    expect(await read(index)).toContain('\nTeam footer\n');
+    for (const match of (await read(index)).matchAll(/\]\(([^)]+\.md)\)/g)) {
+      await expect(fs.stat(path.join(root, 'docs/standards', match[1]))).resolves.toBeDefined();
+    }
+  });
+  it('reports the standard as resolved rather than independently detected', async () => {
+    await deps(['vue']);
+    await runDetect(root);
+    const output = vi.mocked(console.log).mock.calls.flat().join('\n');
+    expect(output.split('Applicable standards:')[0]).not.toContain('async-concurrency');
+    expect(output.split('Applicable standards:')[1]).toContain('async-concurrency');
   });
 });

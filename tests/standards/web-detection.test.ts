@@ -39,7 +39,7 @@ describe('framework evidence', () => {
   it.each(['vue', 'nuxt', '@vitejs/plugin-vue', 'vue-loader', 'vue-tsc', '@vue/babel-plugin-jsx'])('recognizes %s alone', async (name) => {
     await dependencies([name]);
     expect(await ids()).toEqual(['vue']);
-    expect(resolveStandards(await detectTechnologies(root)).map((standard) => standard.id)).toEqual(['html', 'vue']);
+    expect(resolveStandards(await detectTechnologies(root)).map((standard) => standard.id)).toEqual(['async-concurrency', 'html', 'vue']);
   });
   it.each(['vite', 'vue-router', 'pinia', 'preact', 'expo'])('does not infer frameworks from %s alone', async (name) => {
     await dependencies([name]);
